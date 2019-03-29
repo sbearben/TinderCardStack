@@ -21,7 +21,7 @@ class CardStackView @JvmOverloads constructor(
         if (manager is CardStackLayoutManager) {
             super.setLayoutManager(manager)
         } else {
-            throw IllegalArgumentException("CardStackView must be set CardStackLayoutManager.")
+            throw IllegalArgumentException("CardStackView must set a layout manager of type CardStackLayoutManager.")
         }
     }
 
@@ -50,15 +50,21 @@ class CardStackView @JvmOverloads constructor(
         return super.onInterceptTouchEvent(event)
     }
 
-    fun leftSwipe() {
-        swipe()
+    fun rightSwipe() {
+        //swipe()
+        getCardStackLayoutManager().initiatePositiveSwipe()
     }
 
-    fun rightSwipe() {
-        swipe()
+
+    fun leftSwipe() {
+        //swipe()
+        getCardStackLayoutManager().initiateNegativeSwipe()
     }
 
     fun rewind() {
+        getCardStackLayoutManager().initiateRewind()
+
+
         if (layoutManager is CardStackLayoutManager) {
             val state = (layoutManager as CardStackLayoutManager).state
             smoothScrollToPosition(state.topPosition - 1)
@@ -72,4 +78,9 @@ class CardStackView @JvmOverloads constructor(
         }
     }
 
+    private fun getCardStackLayoutManager(): CardStackLayoutManager {
+        val lm = layoutManager
+        return if(lm is CardStackLayoutManager) lm
+        else throw IllegalStateException("CardStackView must set a layout manager of type CardStackLayoutManager.")
+    }
 }

@@ -2,7 +2,6 @@ package uk.co.victoriajanedavis.tindercardstack.cardView
 
 import android.content.Context
 import android.graphics.PointF
-import android.os.Handler
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -147,11 +146,13 @@ class CardStackLayoutManager(
 
     override fun smoothScrollToPosition(recyclerView: RecyclerView, s: RecyclerView.State, position: Int) {
         Log.d("CardStackLayoutManager", "smoothScrollToPosition($position)")
+        /*
         if(scrollPositionIsInvalid(position)) {
             state.setFieldsToIdle()
         } else if (state.status == Status.Idle) {
             smoothScrollToPosition(position)
         }
+        */
     }
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
@@ -186,20 +187,39 @@ class CardStackLayoutManager(
         return findViewByPosition(state.topPosition)
     }
 
-    private fun smoothScrollToPosition(position: Int) {
-        if (position > state.topPosition) {  // In the case of a swipe
-            smoothScrollToNext(position)
-        } else {  // In the case of a rewind
-            smoothScrollToPrevious(position)
+    internal fun initiatePositiveSwipe() {
+        //smoothScrollToNext(CardStackSmoothScroller.ScrollType.AutomaticPositiveSwipe)
+        smoothScrollToPosition(state.topPosition+1, CardStackSmoothScroller.ScrollType.AutomaticPositiveSwipe)
+    }
+
+    internal fun initiateNegativeSwipe() {
+        //smoothScrollToNext(CardStackSmoothScroller.ScrollType.AutomaticNegativeSwipe)
+        smoothScrollToPosition(state.topPosition+1, CardStackSmoothScroller.ScrollType.AutomaticNegativeSwipe)
+    }
+
+    internal fun initiateRewind() {
+        //smoothScrollToPrevious()
+        smoothScrollToPosition(state.topPosition-1, CardStackSmoothScroller.ScrollType.AutomaticRewind)
+    }
+
+    private fun smoothScrollToPosition(position: Int, scrollType: CardStackSmoothScroller.ScrollType) {
+        if(scrollPositionIsInvalid(position)) {
+            state.setFieldsToIdle()
+        } else if (state.status == Status.Idle) {
+            if (position > state.topPosition) {  // In the case of a swipe
+                smoothScrollToNext(position, scrollType)
+            } else {  // In the case of a rewind
+                smoothScrollToPrevious(position)
+            }
         }
     }
 
     // Swipe -> targetPosition > topPosition (card behind)
-    private fun smoothScrollToNext(position: Int) {
+    private fun smoothScrollToNext(position: Int, scrollType: CardStackSmoothScroller.ScrollType) {
         //state.proportion = 0.0f
         state.targetPosition = position
 
-        val scroller = CardStackSmoothScroller(CardStackSmoothScroller.ScrollType.AutomaticSwipe, this)
+        val scroller = CardStackSmoothScroller(scrollType, this)
         scroller.targetPosition = state.topPosition  // scroller.targetPosition is the "adapter position of the target item"
         startSmoothScroll(scroller)
     }
@@ -211,8 +231,9 @@ class CardStackLayoutManager(
         }
 
         //state.proportion = 0.0f
+
         state.targetPosition = position
-        state.topPosition--
+        //state.topPosition--
 
         //Log.d("CardStackLayoutManager", "smoothScroll(AutomaticRewind)")
 
@@ -290,12 +311,14 @@ class CardStackLayoutManager(
         if (state.status == Status.PrepareRewindAnimation) {
             //recycleUnusedViews(recycler)
             val upperAdapterBounds = state.topPosition + visibleCount - 1
+            Log.d("CardStackAdapter", "removeAndRecycleView 3: before, upperAdapterBounds=$upperAdapterBounds")
             findViewByPosition(upperAdapterBounds+1)?.let { view ->
                 Log.d("CardStackAdapter", "removeAndRecycleView 3: adapterPosition=${upperAdapterBounds+1}")
                 removeAndRecycleView(view, recycler)
             }
 
             state.status = Status.RewindAnimating
+            state.topPosition--
         }
     }
 

@@ -17,7 +17,8 @@ class CardStackSmoothScroller(
     private val state = layoutManager.state
 
     enum class ScrollType {
-        AutomaticSwipe,  // either left or right
+        AutomaticPositiveSwipe,  // auto right swipe
+        AutomaticNegativeSwipe,  // auto left swipe
         AutomaticRewind,  // user pressed the rewind button
         ManualSwipe,  // currently swiping card with finger
         ManualCancel  // user lifts finger when card isn't past the threshold (springs back to centre)
@@ -51,11 +52,21 @@ class CardStackSmoothScroller(
         //val setting: AnimationSetting
 
         when (scrollType) {
-            AutomaticSwipe -> {
-                Log.d("CardStackSmoothScroller", "AutomaticSwipe: dx = ${state.width*2}, dy = ${state.height/4}")
+            AutomaticPositiveSwipe -> {
+                Log.d("CardStackSmoothScroller", "AutomaticPositiveSwipe: dx = ${state.width*2}, dy = ${state.height/4}")
                 //val setting = layoutManager.getCardStackSetting().swipeAnimationSetting
                 updateAction(action,
                     state.width * 2,
+                    state.height / 4,
+                    200,
+                    AccelerateInterpolator()
+                )
+            }
+            AutomaticNegativeSwipe -> {
+                Log.d("CardStackSmoothScroller", "AutomaticNegativeSwipe: dx = ${state.width*2}, dy = ${state.height/4}")
+                //val setting = layoutManager.getCardStackSetting().swipeAnimationSetting
+                updateAction(action,
+                    -state.width * 2,
                     state.height / 4,
                     200,
                     AccelerateInterpolator()
@@ -98,10 +109,11 @@ class CardStackSmoothScroller(
 
     override fun onStart() {
         when (scrollType) {
-            AutomaticSwipe -> {
+            AutomaticPositiveSwipe -> {
                 state.status = Status.PrepareSwipeAnimation
                 //listener.onCardDisappeared(layoutManager.getTopView(), state.topPosition)
             }
+            AutomaticNegativeSwipe -> {}
             //AutomaticRewind -> state.status = Status.RewindAnimating
             AutomaticRewind -> state.status = Status.PrepareRewindAnimation
             ManualSwipe -> {
@@ -109,13 +121,14 @@ class CardStackSmoothScroller(
                 //listener.onCardDisappeared(layoutManager.getTopView(), state.topPosition)
             }
             //ManualCancel -> state.status = Status.RewindAnimating
-            ManualCancel -> state.status = Status.PrepareRewindAnimation
+            ManualCancel -> state.status = Status.RewindAnimating
         }
     }
 
     override fun onStop() {
         when (scrollType) {
-            AutomaticSwipe -> {}
+            AutomaticPositiveSwipe -> {}
+            AutomaticNegativeSwipe -> {}
             AutomaticRewind -> {
                 //listener.onCardRewound()
                 //listener.onCardAppeared(layoutManager.getTopView(), state.topPosition)
