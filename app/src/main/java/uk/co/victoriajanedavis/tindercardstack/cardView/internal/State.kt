@@ -1,12 +1,8 @@
 package uk.co.victoriajanedavis.tindercardstack.cardView.internal
 
-import androidx.recyclerview.widget.RecyclerView
-
 class State {
 
-    var topPosition = 0  // I believe represents the position (index?) of the card that's on top/currently displayed
-
-    var targetPosition = RecyclerView.NO_POSITION  // I think this refers to the position of the target card we're trying to animate/scroll to? (could be the topPosition card or some card off screen?)
+    var topPosition = 0  // Represents the adapter position of the card that's on top/currently displayed
 
     var status = Status.Idle
 
@@ -52,6 +48,6 @@ class State {
 
     fun setFieldsToIdle() {
         status = Status.Idle
-        targetPosition = RecyclerView.NO_POSITION
+        //targetPosition = RecyclerView.NO_POSITION
     }
 }

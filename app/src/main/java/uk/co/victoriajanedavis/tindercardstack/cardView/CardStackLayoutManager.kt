@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import uk.co.victoriajanedavis.tindercardstack.cardView.internal.*
+import uk.co.victoriajanedavis.tindercardstack.cardView.internal.CardStackSmoothScroller.ScrollType
 
 class CardStackLayoutManager(
     private val context: Context
@@ -34,12 +35,9 @@ class CardStackLayoutManager(
 
         return when {
             childCount == 0 -> null
-            position in state.topPosition..maxAdapterPosition -> {
-                //Log.d("findViewByPosition_1", "adapter position: $position, childAt: ${maxAdapterPosition-position}, childCount: $childCount, maxAdapterPosition: $maxAdapterPosition")
-                getChildAt(maxAdapterPosition-position)
-            }
-            //else -> super.findViewByPosition(position)
+            position in state.topPosition..maxAdapterPosition -> getChildAt(maxAdapterPosition-position)
             else -> null
+            //else -> super.findViewByPosition(position)
         }
     }
 
@@ -63,79 +61,15 @@ class CardStackLayoutManager(
         return 0
     }
 
-    // TODO: this method can be vastly cleaned up once I understand what it's doing
     override fun onScrollStateChanged(scrollState: Int) {
         when(scrollState) {
-            RecyclerView.SCROLL_STATE_DRAGGING -> {
-                //Log.d("CardStackLayoutManager", "topPosition: ${state.topPosition}, targetPosition: ${state.targetPosition}")
-                //Log.d("CardStackLayoutManager", "SCROLL_STATE_DRAGGING")
-                state.status = Status.Dragging
-            }
-
-            RecyclerView.SCROLL_STATE_SETTLING -> {
-
-                /*
-                //Log.d("CardStackLayoutManager", "SCROLL_STATE_SETTLING")
-                Log.d("onScrollStateChanged", "SETTLING - 1")
-                if (state.status != Status.PrepareSwipeAnimation) {
-                    Log.d("onScrollStateChanged", "SETTLING - 2")
-                    if (state.targetPosition == RecyclerView.NO_POSITION) {
-                        Log.d("onScrollStateChanged", "SETTLING - 3, status: ${state.status}")  // CALLED ON MANUAL CANCEL (status usually RewindAnimating but I saw Dragging once
-                        state.setFieldsToIdle()
-                    } else {
-                        Log.d("onScrollStateChanged", "SETTLING - 4")  // CALLED ON REWIND
-                        if (state.targetPosition > state.topPosition) {
-                            Log.d("onScrollStateChanged", "SETTLING - 5")
-                            state.status = Status.PrepareSwipeAnimation
-                        } else if (state.topPosition > state.targetPosition) {
-                            Log.d("onScrollStateChanged", "SETTLING - 6")
-                            //state.status = Status.RewindAnimating
-                            state.status = Status.PrepareRewindAnimation
-                        }
-                    }
-                }
-                */
-
-            }
-
-            RecyclerView.SCROLL_STATE_IDLE -> {
-
-                Log.d("onScrollStateChanged", "IDLE - 8")
-                state.setFieldsToIdle()
-
-                /*
-                //Log.d("CardStackLayoutManager", "SCROLL_STATE_IDLE")
-                Log.d("onScrollStateChanged", "IDLE - 1")
-                if(state.status == Status.PrepareSwipeAnimation) {
-                    Log.d("onScrollStateChanged", "IDLE - 2")
-                    if (state.targetPosition == RecyclerView.NO_POSITION) {
-                        Log.d("onScrollStateChanged", "IDLE - 3")
-                        state.setFieldsToIdle()
-                    } else {
-                        Log.d("onScrollStateChanged", "IDLE - 4")
-                        if (state.targetPosition > state.topPosition) {
-                            Log.d("onScrollStateChanged", "IDLE - 5")
-                            smoothScrollToNext(state.targetPosition)
-                        } else if(state.topPosition > state.targetPosition) {
-                            Log.d("onScrollStateChanged", "IDLE - 6")
-                            smoothScrollToPrevious(state.targetPosition)
-                        } else {
-                            Log.d("onScrollStateChanged", "IDLE - 7")
-                            state.setFieldsToIdle()
-                        }
-                    }
-                } else {
-                    Log.d("onScrollStateChanged", "IDLE - 8")  // CALLED EVERYTIME
-                    state.setFieldsToIdle()
-                }
-                */
-
-            }
+            RecyclerView.SCROLL_STATE_DRAGGING -> state.status = Status.Dragging
+            RecyclerView.SCROLL_STATE_SETTLING -> {}
+            RecyclerView.SCROLL_STATE_IDLE -> state.setFieldsToIdle()
         }
     }
 
     override fun scrollToPosition(position: Int) {
-        Log.d("CardStackLayoutManager", "scrollToPosition($position)")
         if(scrollPositionIsInvalid(position)) {
             state.setFieldsToIdle()
         } else if (state.status == Status.Idle) {
@@ -145,14 +79,7 @@ class CardStackLayoutManager(
     }
 
     override fun smoothScrollToPosition(recyclerView: RecyclerView, s: RecyclerView.State, position: Int) {
-        Log.d("CardStackLayoutManager", "smoothScrollToPosition($position)")
-        /*
-        if(scrollPositionIsInvalid(position)) {
-            state.setFieldsToIdle()
-        } else if (state.status == Status.Idle) {
-            smoothScrollToPosition(position)
-        }
-        */
+        //Log.d("CardStackLayoutManager", "smoothScrollToPosition($position)")
     }
 
     override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
@@ -188,36 +115,44 @@ class CardStackLayoutManager(
     }
 
     internal fun initiatePositiveSwipe() {
-        //smoothScrollToNext(CardStackSmoothScroller.ScrollType.AutomaticPositiveSwipe)
-        smoothScrollToPosition(state.topPosition+1, CardStackSmoothScroller.ScrollType.AutomaticPositiveSwipe)
+        executeIfPositionIsValid(state.topPosition+1) { position ->
+            smoothScrollToNext(position, ScrollType.AutomaticPositiveSwipe)
+        }
     }
 
     internal fun initiateNegativeSwipe() {
-        //smoothScrollToNext(CardStackSmoothScroller.ScrollType.AutomaticNegativeSwipe)
-        smoothScrollToPosition(state.topPosition+1, CardStackSmoothScroller.ScrollType.AutomaticNegativeSwipe)
+        executeIfPositionIsValid(state.topPosition+1) { position ->
+            smoothScrollToNext(position, ScrollType.AutomaticNegativeSwipe)
+        }
     }
 
     internal fun initiateRewind() {
-        //smoothScrollToPrevious()
-        smoothScrollToPosition(state.topPosition-1, CardStackSmoothScroller.ScrollType.AutomaticRewind)
+        executeIfPositionIsValid(state.topPosition-1) { position -> smoothScrollToPrevious(position) }
     }
 
-    private fun smoothScrollToPosition(position: Int, scrollType: CardStackSmoothScroller.ScrollType) {
+    private fun executeIfPositionIsValid(position: Int, lambda: (position: Int) -> Unit) {
         if(scrollPositionIsInvalid(position)) {
             state.setFieldsToIdle()
         } else if (state.status == Status.Idle) {
-            if (position > state.topPosition) {  // In the case of a swipe
+            lambda(position)
+        }
+    }
+
+    private fun smoothScrollToPosition(position: Int, scrollType: ScrollType) {
+        if(scrollPositionIsInvalid(position)) {
+            state.setFieldsToIdle()
+        } else if (state.status == Status.Idle) {
+            if (position > state.topPosition) {  // swipe
                 smoothScrollToNext(position, scrollType)
-            } else {  // In the case of a rewind
+            } else {  // rewind
                 smoothScrollToPrevious(position)
             }
         }
     }
 
     // Swipe -> targetPosition > topPosition (card behind)
-    private fun smoothScrollToNext(position: Int, scrollType: CardStackSmoothScroller.ScrollType) {
+    private fun smoothScrollToNext(position: Int, scrollType: ScrollType) {
         //state.proportion = 0.0f
-        state.targetPosition = position
 
         val scroller = CardStackSmoothScroller(scrollType, this)
         scroller.targetPosition = state.topPosition  // scroller.targetPosition is the "adapter position of the target item"
@@ -229,40 +164,25 @@ class CardStackLayoutManager(
         getTopView()?.let { view ->
             //listener.onCardDisappeared(view, topPosition)
         }
-
         //state.proportion = 0.0f
 
-        state.targetPosition = position
-        //state.topPosition--
-
-        //Log.d("CardStackLayoutManager", "smoothScroll(AutomaticRewind)")
-
-        val scroller = CardStackSmoothScroller(CardStackSmoothScroller.ScrollType.AutomaticRewind, this)
-        //scroller.targetPosition = state.topPosition
-        scroller.targetPosition = state.targetPosition
+        val scroller = CardStackSmoothScroller(ScrollType.AutomaticRewind, this)
+        scroller.targetPosition = position
         startSmoothScroll(scroller)
     }
 
     private fun scrollPositionIsInvalid(position: Int) : Boolean {
         return position == state.topPosition || position < 0 || itemCount < position
-
     }
 
     private fun update(recycler: RecyclerView.Recycler) {
         state.width = width
         state.height = height
 
-        //Log.d("CardStackLayoutManager", "topPosition: ${state.topPosition}, targetPosition: ${state.targetPosition}")
-
-        detectSwipe(recycler)
-
-        detectRewind(recycler)
-
+        detectPrepareSwipe(recycler)
+        detectPrepareRewind(recycler)
         detachAndScrapAttachedViews(recycler)
-
         render(recycler)
-
-        //recycleUnusedViews(recycler)
 
         /*
         if(status == Status.Dragging) {
@@ -271,21 +191,18 @@ class CardStackLayoutManager(
         */
     }
 
-    private fun detectSwipe(recycler: RecyclerView.Recycler) {
+    private fun detectPrepareSwipe(recycler: RecyclerView.Recycler) {
 
         // state.targetPosition == RecyclerView.NO_POSITION -> TRUE when manual swipe
         // state.targetPosition > state.topPosition -> TRUE when auto swipe
-        if (state.status == Status.PrepareSwipeAnimation && (state.targetPosition == RecyclerView.NO_POSITION || state.targetPosition > state.topPosition)) {
-            Log.d("CardStackLayoutManager", "update(first) \n" +
-                    "state.targetPosition == RecyclerView.NO_POSITION: ${state.targetPosition == RecyclerView.NO_POSITION}\n" +
-                    "state.topPosition < state.targetPosition: ${state.topPosition < state.targetPosition}")
+        if (state.status == Status.PrepareSwipeAnimation) {
             if (Math.abs(state.dx) > width || Math.abs(state.dy) > height) {
                 getTopView()?.also { view ->
                     Log.d("CardStackAdapter", "removeAndRecycleView 1")
                     removeAndRecycleView(view, recycler)
                 }
 
-                state.status = Status.SwipeAnimating  // this causes scrollHorizontally/VerticallyBy to stop calling update() until animation is over
+                state.status = Status.SwipeAnimating  // causes scrollHorizontally/VerticallyBy to stop calling update() until animation is over
                 state.topPosition++
 
                 /*
@@ -301,19 +218,15 @@ class CardStackLayoutManager(
 
                 state.dx = 0
                 state.dy = 0
-
-                Log.d("CardStackLayoutManager", "update(second)")
             }
         }
     }
 
-    private fun detectRewind(recycler: RecyclerView.Recycler) {
+    private fun detectPrepareRewind(recycler: RecyclerView.Recycler) {
         if (state.status == Status.PrepareRewindAnimation) {
-            //recycleUnusedViews(recycler)
             val upperAdapterBounds = state.topPosition + visibleCount - 1
-            Log.d("CardStackAdapter", "removeAndRecycleView 3: before, upperAdapterBounds=$upperAdapterBounds")
-            findViewByPosition(upperAdapterBounds+1)?.let { view ->
-                Log.d("CardStackAdapter", "removeAndRecycleView 3: adapterPosition=${upperAdapterBounds+1}")
+            findViewByPosition(upperAdapterBounds)?.let { view ->
+                Log.d("CardStackAdapter", "removeAndRecycleView 2: adapterPosition=${upperAdapterBounds+1}")
                 removeAndRecycleView(view, recycler)
             }
 
@@ -328,13 +241,9 @@ class CardStackLayoutManager(
         val parentRight = width - paddingRight
         val parentBottom = height - paddingBottom
 
-        Log.d("CardStackLayoutManager", "render()")
-
         val endPoint = itemCount.coerceAtMost(state.topPosition+visibleCount) // this essentially is a min function
         (state.topPosition until endPoint).forEach { i ->
             val child = recycler.getViewForPosition(i)
-
-            //Log.d("CardStackLayoutManager", "addChild($i)")
 
             addView(child, 0)
             measureChildWithMargins(child, 0, 0)
@@ -356,26 +265,6 @@ class CardStackLayoutManager(
                 updateScale(child, state, currentIndex)
                 resetRotation(child)
                 resetOverlay(child)
-            }
-        }
-    }
-
-    private fun recycleUnusedViews(recycler: RecyclerView.Recycler) {
-        val childCount = childCount
-        if (childCount == 0) return
-
-        (0 until childCount).forEach { i ->
-            val view = getChildAt(i)
-            if (view != null) {
-                val adapterPosition = getPosition(view)
-                val upperAdapterBounds = state.topPosition + visibleCount - 1
-                if (adapterPosition < state.topPosition || adapterPosition > upperAdapterBounds) {
-                    Log.d(
-                        "CardStackAdapter",
-                        "removeAndRecycleView 2: i=$i, adapterPosition=$adapterPosition, childCount=$childCount"
-                    )
-                    removeAndRecycleView(view, recycler)
-                }
             }
         }
     }

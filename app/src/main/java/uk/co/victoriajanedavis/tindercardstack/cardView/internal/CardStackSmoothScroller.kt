@@ -24,10 +24,8 @@ class CardStackSmoothScroller(
         ManualCancel  // user lifts finger when card isn't past the threshold (springs back to centre)
     }
 
-    // RecyclerView will call this method each time it scrolls until it can find the target position/view in the layout.
-    // - If we want to trigger a new smooth scroll and cancel the previous one, update the Action object.
     override fun onSeekTargetStep(dx: Int, dy: Int, state: RecyclerView.State, action: Action) {
-        Log.d("CardStackSmoothScroller", "onSeekTarget(dx = $dx, dy = $dy)")
+        //Log.d("CardStackSmoothScroller", "onSeekTarget(dx = $dx, dy = $dy)")
         when(scrollType) {
             AutomaticRewind -> {
                 //layoutManager.removeAllViews()
@@ -42,10 +40,6 @@ class CardStackSmoothScroller(
         }
     }
 
-    // Called when the target position/view is laid out. This is the last callback SmoothScroller
-    // will receive and it should update the provided {@link Action} to define the scroll
-    // details towards the target view.
-    // - Action instance that we should update to define final scroll action towards the targetView
     override fun onTargetFound(targetView: View, s: RecyclerView.State, action: Action) {
         val x = targetView.translationX.toInt()
         val y = targetView.translationY.toInt()
@@ -114,13 +108,11 @@ class CardStackSmoothScroller(
                 //listener.onCardDisappeared(layoutManager.getTopView(), state.topPosition)
             }
             AutomaticNegativeSwipe -> {}
-            //AutomaticRewind -> state.status = Status.RewindAnimating
             AutomaticRewind -> state.status = Status.PrepareRewindAnimation
             ManualSwipe -> {
                 state.status = Status.PrepareSwipeAnimation
                 //listener.onCardDisappeared(layoutManager.getTopView(), state.topPosition)
             }
-            //ManualCancel -> state.status = Status.RewindAnimating
             ManualCancel -> state.status = Status.RewindAnimating
         }
     }
