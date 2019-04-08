@@ -6,8 +6,8 @@ import android.os.Handler
 import android.os.Looper
 import kotlinx.android.synthetic.main.activity_main.*
 import uk.co.victoriajanedavis.tindercardstack.cardView.CardStackLayoutManager
-import uk.co.victoriajanedavis.tindercardstack.cardView.data.CardStackAdapter
-import uk.co.victoriajanedavis.tindercardstack.cardView.data.generateDummyUsers
+import uk.co.victoriajanedavis.tindercardstack.data.CardStackAdapter
+import uk.co.victoriajanedavis.tindercardstack.data.generateDummyUsers
 
 class MainActivity : AppCompatActivity() {
 

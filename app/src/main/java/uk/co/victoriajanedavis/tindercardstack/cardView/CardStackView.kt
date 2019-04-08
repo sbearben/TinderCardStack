@@ -14,7 +14,7 @@ class CardStackView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : RecyclerView(context, attrs, defStyleAttr) {
 
-    private val observer = CardStackDataObserver()
+    private val observer = CardStackDataObserver(this)
     private val flingListener = CardStackFlingListener(this)
 
     override fun setLayoutManager(manager: LayoutManager?) {
@@ -63,22 +63,9 @@ class CardStackView @JvmOverloads constructor(
 
     fun rewind() {
         getCardStackLayoutManager().initiateRewind()
-
-
-        if (layoutManager is CardStackLayoutManager) {
-            val state = (layoutManager as CardStackLayoutManager).state
-            smoothScrollToPosition(state.topPosition - 1)
-        }
     }
 
-    private fun swipe() {
-        if (layoutManager is CardStackLayoutManager) {
-            val state = (layoutManager as CardStackLayoutManager).state
-            smoothScrollToPosition(state.topPosition + 1)
-        }
-    }
-
-    private fun getCardStackLayoutManager(): CardStackLayoutManager {
+    internal fun getCardStackLayoutManager(): CardStackLayoutManager {
         val lm = layoutManager
         return if(lm is CardStackLayoutManager) lm
         else throw IllegalStateException("CardStackView must set a layout manager of type CardStackLayoutManager.")

@@ -1,6 +1,8 @@
 package uk.co.victoriajanedavis.tindercardstack.cardView.internal
 
-class State {
+import uk.co.victoriajanedavis.tindercardstack.cardView.Direction
+
+internal class State {
 
     var topPosition = 0  // Represents the adapter position of the card that's on top/currently displayed
 

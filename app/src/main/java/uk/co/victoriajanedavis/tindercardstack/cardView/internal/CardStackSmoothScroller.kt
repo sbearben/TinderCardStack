@@ -9,12 +9,13 @@ import androidx.recyclerview.widget.RecyclerView
 import uk.co.victoriajanedavis.tindercardstack.cardView.CardStackLayoutManager
 import uk.co.victoriajanedavis.tindercardstack.cardView.internal.CardStackSmoothScroller.ScrollType.*
 
-class CardStackSmoothScroller(
+internal class CardStackSmoothScroller(
     private val scrollType: ScrollType,
-    private val layoutManager: CardStackLayoutManager
+    layoutManager: CardStackLayoutManager
 ) : RecyclerView.SmoothScroller() {
 
     private val state = layoutManager.state
+    private val settings = layoutManager.settings
 
     enum class ScrollType {
         AutomaticPositiveSwipe,  // auto right swipe
@@ -24,16 +25,16 @@ class CardStackSmoothScroller(
         ManualCancel  // user lifts finger when card isn't past the threshold (springs back to centre)
     }
 
-    override fun onSeekTargetStep(dx: Int, dy: Int, state: RecyclerView.State, action: Action) {
-        //Log.d("CardStackSmoothScroller", "onSeekTarget(dx = $dx, dy = $dy)")
+    override fun onSeekTargetStep(dx: Int, dy: Int, s: RecyclerView.State, action: Action) {
+        // Used to essentially trigger scrollBy and subsequently update() to layout the target view coming from a rewind
         when(scrollType) {
             AutomaticRewind -> {
-                //layoutManager.removeAllViews()
-                updateAction(action,
-                    0,  // Coming up from bottom so no change in X
-                    -layoutManager.state.height*2, // twice the height of the card
-                    200,
-                    DecelerateInterpolator()
+                val animationSetting = settings.rewindAnimation
+                updateAction(action,  // dx and dy here are used to set the initial position of the card coming in from a rewind
+                    animationSetting.getDx(state),
+                    animationSetting.getDy(state),
+                    animationSetting.duration,
+                    animationSetting.interpolator
                 )
             }
             else -> {}
@@ -43,59 +44,56 @@ class CardStackSmoothScroller(
     override fun onTargetFound(targetView: View, s: RecyclerView.State, action: Action) {
         val x = targetView.translationX.toInt()
         val y = targetView.translationY.toInt()
-        //val setting: AnimationSetting
 
         when (scrollType) {
             AutomaticPositiveSwipe -> {
                 Log.d("CardStackSmoothScroller", "AutomaticPositiveSwipe: dx = ${state.width*2}, dy = ${state.height/4}")
-                //val setting = layoutManager.getCardStackSetting().swipeAnimationSetting
+                val animationSetting = settings.positiveSwipeAnimation
                 updateAction(action,
-                    state.width * 2,
-                    state.height / 4,
-                    200,
-                    AccelerateInterpolator()
+                    animationSetting.getDx(state),
+                    animationSetting.getDy(state),
+                    animationSetting.duration,
+                    animationSetting.interpolator
                 )
             }
             AutomaticNegativeSwipe -> {
                 Log.d("CardStackSmoothScroller", "AutomaticNegativeSwipe: dx = ${state.width*2}, dy = ${state.height/4}")
-                //val setting = layoutManager.getCardStackSetting().swipeAnimationSetting
+                val animationSetting = settings.negativeSwipeAnimation
                 updateAction(action,
-                    -state.width * 2,
-                    state.height / 4,
-                    200,
-                    AccelerateInterpolator()
+                    animationSetting.getDx(state),
+                    animationSetting.getDy(state),
+                    animationSetting.duration,
+                    animationSetting.interpolator
                 )
             }
             AutomaticRewind -> {
                 Log.d("CardStackSmoothScroller", "AutomaticRewind: dx = ${-x}, dy = ${-y}")
-                //setting = layoutManager.getCardStackSetting().rewindAnimationSetting
+                val animationSetting = settings.rewindAnimation
                 updateAction(action,
                     -x,
                     -y,
-                    200,
-                    DecelerateInterpolator()
+                    animationSetting.duration,
+                    animationSetting.interpolator
                 )
             }
             ManualSwipe -> {
-                val dx = x * 10
-                val dy = y * 10
-                Log.d("CardStackSmoothScroller", "ManualSwipe: dx = $dx, dy = $dy")
-                //setting = layoutManager.getCardStackSetting().swipeAnimationSetting
+                Log.d("CardStackSmoothScroller", "ManualSwipe")
+                val animationSetting = settings.positiveSwipeAnimation
                 updateAction(action,
-                    dx,
-                    dy,
-                    200,
-                    AccelerateInterpolator()
+                    x * 10,
+                    y * 10,
+                    animationSetting.duration,
+                    animationSetting.interpolator
                 )
             }
             ManualCancel -> {
                 Log.d("CardStackSmoothScroller", "ManualCancel: dx = ${-x}, dy = ${-y}")
-                //setting = layoutManager.getCardStackSetting().rewindAnimationSetting
+                val animationSetting = settings.rewindAnimation
                 updateAction(action,
                     -x,
                     -y,
-                    200,
-                    DecelerateInterpolator()
+                    animationSetting.duration,
+                    animationSetting.interpolator
                 )
             }
         }
@@ -107,7 +105,10 @@ class CardStackSmoothScroller(
                 state.status = Status.PrepareSwipeAnimation
                 //listener.onCardDisappeared(layoutManager.getTopView(), state.topPosition)
             }
-            AutomaticNegativeSwipe -> {}
+            AutomaticNegativeSwipe -> {
+                state.status = Status.PrepareSwipeAnimation
+                //listener.onCardDisappeared(layoutManager.getTopView(), state.topPosition)
+            }
             AutomaticRewind -> state.status = Status.PrepareRewindAnimation
             ManualSwipe -> {
                 state.status = Status.PrepareSwipeAnimation

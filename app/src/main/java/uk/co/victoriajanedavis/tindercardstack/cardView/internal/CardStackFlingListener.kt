@@ -5,7 +5,7 @@ import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import uk.co.victoriajanedavis.tindercardstack.cardView.CardStackLayoutManager
 
-class CardStackFlingListener(
+internal class CardStackFlingListener(
     private var recyclerView: RecyclerView
 ) : RecyclerView.OnFlingListener() {
 
@@ -55,12 +55,13 @@ class CardStackFlingListener(
 
             if (x != 0 || y != 0) {
                 val state = layoutManager.state
+                val settings = layoutManager.settings
 
                 val horizontal = Math.abs(x) / targetView.width.toFloat()
                 val vertical = Math.abs(y) / targetView.height.toFloat()
 
-                if (horizontal > SWIPE_THRESHOLD || vertical > SWIPE_THRESHOLD) {
-                    if (Direction.HORIZONTAL.contains(state.getDirection())) {
+                if (horizontal > settings.swipeThreshold || vertical > settings.swipeThreshold) {
+                    if (settings.directions.contains(state.getDirection())) {
                         val scroller =
                             CardStackSmoothScroller(CardStackSmoothScroller.ScrollType.ManualSwipe, layoutManager)
                         scroller.targetPosition = state.topPosition

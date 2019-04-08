@@ -2,7 +2,7 @@ package uk.co.victoriajanedavis.tindercardstack.cardView.internal
 
 import android.view.View
 
-interface ViewManipulator {
+internal interface ViewManipulator {
 
     fun resetTranslation(view: View)
 
@@ -14,7 +14,7 @@ interface ViewManipulator {
 
     fun updateTranslation(view: View, state: State)
 
-    fun updateTranslation(view: View, index: Int)
+    fun updateTranslation(view: View, state: State, index: Int)
 
     fun updateScale(view: View, state: State, index: Int)
 

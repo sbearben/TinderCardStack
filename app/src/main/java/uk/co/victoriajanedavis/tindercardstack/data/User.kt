@@ -1,4 +1,4 @@
-package uk.co.victoriajanedavis.tindercardstack.cardView.data
+package uk.co.victoriajanedavis.tindercardstack.data
 
 class User(
     val id: Int,

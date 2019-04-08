@@ -10,17 +10,17 @@ import uk.co.victoriajanedavis.tindercardstack.cardView.internal.*
 import uk.co.victoriajanedavis.tindercardstack.cardView.internal.CardStackSmoothScroller.ScrollType
 
 class CardStackLayoutManager(
-    private val context: Context
+    context: Context,
+    val settings: Settings = Settings()
 ) : RecyclerView.LayoutManager(),
     RecyclerView.SmoothScroller.ScrollVectorProvider,
-    ViewManipulator by ViewManipulatorImpl() {
+    ViewManipulator by ViewManipulatorImpl(context, settings) {
 
-    val state = State()
-
-    private val visibleCount = 3
+    internal val state = State()
 
 
     override fun onLayoutChildren(recycler: RecyclerView.Recycler, s: RecyclerView.State) {
+        //Log.d("CardStackLayoutManager", "onLayoutChildren()")
         update(recycler)
         if (s.didStructureChange()) {
             getTopView()?.let { view ->
@@ -42,8 +42,8 @@ class CardStackLayoutManager(
     }
 
     override fun scrollHorizontallyBy(dx: Int, recycler: RecyclerView.Recycler, s: RecyclerView.State): Int {
+        //Log.d("CardStackLayoutManager", "scrollHorizontal($dx)")
         if (state.status != Status.SwipeAnimating) {
-            //Log.d("CardStackLayoutManager", "scrollHorizontal($dx)")
             state.dx -= dx
             update(recycler)
             return dx
@@ -52,8 +52,8 @@ class CardStackLayoutManager(
     }
 
     override  fun scrollVerticallyBy(dy: Int, recycler: RecyclerView.Recycler, s: RecyclerView.State): Int {
+        //Log.d("CardStackLayoutManager", "scrollVertical($dy)")
         if (state.status != Status.SwipeAnimating) {
-            //Log.d("CardStackLayoutManager", "scrollVertical($dy)")
             state.dy -= dy
             update(recycler)
             return dy
@@ -224,7 +224,7 @@ class CardStackLayoutManager(
 
     private fun detectPrepareRewind(recycler: RecyclerView.Recycler) {
         if (state.status == Status.PrepareRewindAnimation) {
-            val upperAdapterBounds = state.topPosition + visibleCount - 1
+            val upperAdapterBounds = state.topPosition + settings.visibleCount - 1
             findViewByPosition(upperAdapterBounds)?.let { view ->
                 Log.d("CardStackAdapter", "removeAndRecycleView 2: adapterPosition=${upperAdapterBounds+1}")
                 removeAndRecycleView(view, recycler)
@@ -241,7 +241,7 @@ class CardStackLayoutManager(
         val parentRight = width - paddingRight
         val parentBottom = height - paddingBottom
 
-        val endPoint = itemCount.coerceAtMost(state.topPosition+visibleCount) // this essentially is a min function
+        val endPoint = itemCount.coerceAtMost(state.topPosition+settings.visibleCount) // this essentially is a min function
         (state.topPosition until endPoint).forEach { i ->
             val child = recycler.getViewForPosition(i)
 
@@ -261,7 +261,7 @@ class CardStackLayoutManager(
                 updateOverlay(child, state)
             } else {
                 val currentIndex = i - state.topPosition
-                updateTranslation(child, currentIndex)
+                updateTranslation(child, state, currentIndex)
                 updateScale(child, state, currentIndex)
                 resetRotation(child)
                 resetOverlay(child)
